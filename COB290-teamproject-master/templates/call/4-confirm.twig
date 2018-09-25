@@ -1,0 +1,48 @@
+{# Author: Christopher Stevens #}
+{% extends "call/call-template.twig" %}
+{% set percentage = 95 %}
+
+{% block content %}
+    <div class="col-lg-7 col-md-9 col-sm-12 ml-auto mr-auto mt-4">
+        <div class="row">
+            <div class="col">
+                {% for problem in problems %}
+                <div class="card">
+                    <div class="card-header">
+                        #{% if problem.type == "new" %}--{% else %}{{ problem.problem_id }}{% endif %} - {{ problem.subject }}
+                    </div>
+                    <div class="card-body">
+                        <div class="row d-flex justify-content-around mb-2">
+                            <span><b>Priority:</b> {% if problem.priority == 1 %}Low{% elseif problem.priority == 2 %}Medium{% elseif problem.priority == 3 %}High{% endif %}</span>
+                            <span><b>Assigned To:</b> {{ problem.operator_name }}</span>
+                        </div>
+
+                        <h4>Call Note</h4>
+                        <p>{{ problem.note }}</p>
+
+                        <h4>Hardware/Software</h4>
+                        <ul>
+                            {% for hardware in problem.hardware %}
+                            <li>{{ hardware[0] }}, {{ hardware[1] }}</li>
+                            {% endfor %}
+                            {% for software in problem.software %}
+                            <li>{{ software[0] }}, {{ software[1] }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        <hr class="w-100" />
+    </div>
+{% endblock %}
+
+{% block js %}
+<script>
+    $("#proceedBtn").off().on("click", function() {
+        $("#v-pills-specialist").load("/record-call/4", {problems: problems, employee: caller});
+        $("#v-pills-summary-tab").removeClass("active text-light").addClass("text-dark");
+    });
+</script>
+{% endblock %}

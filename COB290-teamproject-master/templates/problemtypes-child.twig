@@ -1,0 +1,23 @@
+<!-- Author: Alex Lowdon -->
+<!-- Card code for the table on the right of the problemtypes page that lists all the children (more specific) problem types for an individual problem type -->
+<div class="card">
+    <h5 class="card-header text-muted">{{ parent.name }}'s children problem types</h5>
+    <table class="table table-hover" id="hardwareTable">
+        <thead>
+        <tr>
+            <th>ID</th>
+            <th>Problem type</th>
+            <th># of children</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for children in children %}
+            <tr class="table-item" onclick="loadChildren({{ children.problemtype_id }})">
+                <td>{{ children.problemtype_id }}</td>
+                <td>{{ children.type }}</td>
+                <td>{{ children.children }}<i class="fa fa-caret-square-o-right float-right"></i></td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>

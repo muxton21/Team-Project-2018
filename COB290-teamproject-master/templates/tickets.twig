@@ -1,0 +1,305 @@
+{# Author: Joe Penny & Matthew Gabriel #}
+{% extends "template.twig" %}
+{% set active_page = "tickets" %}
+{% block title %}Tickets{% endblock %}
+
+{% block css %}
+    <style>
+        .navbar {
+            background-image: linear-gradient(to left, #667eea 0%, #764ba2 100%);
+        }
+        .ticket-item {
+            cursor: pointer;
+        }
+        .ticket-item:hover {
+            background-color: rgba(0,0,0,.075);
+        }
+        .ticket-extended-wrap > td {
+            box-shadow: inset 0px 11px 8px -10px #000, inset 0px -11px 8px -10px #000;
+        }
+        .ticket-info {
+            border-right: 1px solid rgba(0,0,0,.25);
+        }
+        .ticket-extended.collapse.show {
+            display: flex!important;
+        }
+        .table{
+            table-layout:fixed;
+        }
+        .sortHeader:hover{
+            cursor: pointer;
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+    <div class="row">
+        <div class="col-lg-2 col-md-3">
+            <div class="card">
+                <h4 class="card-header">Tickets</h4>
+                <div class="card-body"> <!--Card for the search bar and 'my tickets' checkbox-->
+                    <div class="form-group">
+                        <input type="text" class="form-control" id="search" placeholder="Search...">
+                    </div>
+                    <div class="form-check">
+                        <label class="form-check-label">
+                            <input class="form-check-input" type="checkbox" id="filter" onclick="$('#search').keyup();">
+                            Show only my tickets
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-10 col-md-9">
+            <div class="card">
+                <table id="ticketTable" class="table"> <!--Table to store tickets-->
+
+                    <thead>
+                    <tr>
+                        <th class="sortHeader" onclick="sortTable(0)" width="100em">ID <i class="fa fa-fw fa-sort float-right"></i></th>
+                        <th class="sortHeader" onclick="sortTable(1)" width="100em">Age <i class="fa fa-fw fa-sort float-right"></i></th>
+                        <th class="sortHeader" onclick="sortTable(2)" width="100em">Priority <i class="fa fa-fw fa-sort float-right"></i></th>
+                        <th class="largeHeader" width="100%">Subject</th>
+                        <th class="sortHeader" onclick="sortTable(4)" width="100em" style="text-align: center;">Status <i class="fa fa-fw fa-sort float-right"></i></th>
+                        <th width="50em"></th>
+                    </tr>
+                    </thead>
+
+                    <tbody id="ticket-body" data-children=".ticket-extended">
+
+                    {% for ticket in tickets %}
+                        {% set difference = date(ticket.received).diff(date('now')) %}
+                        {% if difference.d < 1 %}
+                            {% if difference.h <1 %}
+                                {% set age = "Just now" %}
+                            {% else %}
+                                {% set age = difference.h ~ "h ago" %}
+                            {% endif %}
+                        {% else %}
+                            {% set age = difference.days ~ "d ago" %}
+                        {% endif %}
+
+                        {% if ticket.priority == 1 %}
+                            {% set priority = "Low" %}
+                            {% set pcolour = "#7ab3ff" %}
+                        {% elseif ticket.priority == 2 %}
+                            {% set priority = "Medium" %}
+                            {% set pcolour = "orange" %}
+                        {% else %}
+                            {% set priority = "High" %}
+                            {% set pcolour = "red" %}
+                        {% endif %}
+
+                        {% if ticket.status == 0 %}
+                            {% set status = "Open" %}
+                            {% set scolour = "green" %}
+                        {% else%}
+                            {% set status = "Closed" %}
+                            {% set scolour = "red" %}
+                        {% endif %}
+
+                        <tr onclick="loadInfo({{ ticket.problem_id }}, this)" id="Row-{{ ticket.problem_id }}" data-value="{{ ticket.operator_id }}" class="ticket-item" data-toggle="collapse" data-target="#ticket{{ ticket.problem_id }}" data-parent="#tickets-body">
+                            <td data-value="{{ ticket.problem_id }}">#{{ ticket.problem_id }}</td>
+                            <td data-value="{{ difference.h + difference.d*24 }}">{{ age }}</td>
+                            <td data-value="{{ 2 - ticket.priority }}" style="color: {{ pcolour }};">{{ priority }}</td>
+                            <td style="text-overflow: ellipsis;">{{ ticket.subject }}</td>
+                            <td data-value="{{ ticket.status }}" style="color: {{ scolour }};text-align: center">{{ status }}</td>
+                            <td><i class="fa fa-caret-square-o-down ticket-item-expand"></i></td>
+                        </tr>
+
+                    {% endfor %}
+
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block js %}
+    <script>
+        var bodySave = document.getElementById("ticket-body").innerHTML; //Save the tickets related to all specialists
+        var bodyMySave = {% for ticket in tickets %} //Add all tickets related to that operator into a variable
+                {% if ticket.operator_id == user.operator_id %}
+                {% set difference = date(ticket.received).diff(date('now')) %}
+                {% if difference.d < 1 %}
+                {% if difference.h <1 %}
+                {% set age = "Just now" %}
+                {% else %}
+                {% set age = difference.h ~ "h ago" %}
+                {% endif %}
+                {% else %}
+                {% set age = difference.days ~ "d ago" %}
+                {% endif %}
+                {% if ticket.priority == 1 %} {# Use words and colour instead of numbers to be more intuitive #}
+                {% set priority = "Low" %}
+                {% set pcolour = "#7ab3ff" %}
+                {% elseif ticket.priority == 2 %}
+                {% set priority = "Medium" %}
+                {% set pcolour = "orange" %}
+                {% else %}
+                {% set priority = "High" %}
+                {% set pcolour = "red" %}
+                {% endif %}
+                {% if ticket.status == 0 %} {# Is the ticket open or closed? #}
+                {% set status = "Open" %}
+                {% set scolour = "green" %}
+                {% else %}
+                {% set status = "Closed" %}
+                {% set scolour = "red" %}
+                {% endif %}
+            '       <tr onclick="loadInfo({{ ticket.problem_id }}, this)" id="Row-{{ ticket.problem_id }}" data-value="{{ ticket.operator_id }}" class="ticket-item" data-toggle="collapse" data-target="#ticket{{ ticket.problem_id }}" data-parent="#tickets-body">\n' +
+            '          <td data-value="{{ ticket.problem_id }}">#{{ ticket.problem_id }}</td>\n' +
+            '          <td data-value="{{ difference.h + difference.d*24 }}">{{ age }}</td>\n' +
+            '          <td data-value="{{ 2 - ticket.priority }}" style="color: {{ pcolour }};">{{ priority }}</td>\n' +
+            '          <td style="text-overflow: ellipsis;">{{ ticket.subject }}</td>\n' +
+            '          <td data-value="{{ ticket.status }}" style="color: {{ scolour }};text-align: center">{{ status }}</td>\n' +
+            '          <td><i class="fa fa-caret-square-o-down ticket-item-expand"></i></td>\n' +
+            '       </tr>\n' +
+                {% endif %}
+                {% endfor %} "";
+        $( "#search" ).keyup(function() { //Perform a search of the subject value on keypress on the search bar
+            var search = document.getElementById("search").value; //Get the value of the search bar
+            var body = document.getElementById("ticket-body");
+            if(document.getElementById("filter").checked) //If the 'my tickets' filter is checked'
+            {
+                document.getElementById("ticket-body").innerHTML = bodyMySave; //Search from all tickets related to the user
+            }
+            else
+            {
+                document.getElementById("ticket-body").innerHTML = bodySave; //Search from all tickets
+            }
+            if(search != "")
+            {
+                var row = body.getElementsByTagName('tr');
+                for (var i = 0; i < row.length; i++)
+                {
+                    var currentRow = row[i].childNodes[7].innerHTML.toLowerCase();
+                    if (currentRow.indexOf(search.toLowerCase()) == -1) //Compare values and remove tickets that don't match
+                    {
+                        row[i].remove();
+                        i--;
+                    }
+                }
+            }
+        });
+        function sortTable(n)
+        {
+            var rows = document.getElementById("ticketTable").getElementsByTagName('tbody')[0];//Get the set of rows
+            var switching = true;//Start switching to true to start the sort
+            while(switching)
+            {
+                switching = false;
+                for (var i = 0; i < rows.children.length - 1; i++)
+                {
+                    var row = parseInt(rows.children[i].children[n].getAttribute('data-value')); //Get the data for a give row
+                    var nextRow = parseInt(rows.children[i + 1].children[n].getAttribute('data-value')); //Get the data for the next row
+                    var shouldSwitch = row > nextRow; // Should the code switch the rows?
+                    if(shouldSwitch)
+                    {
+                        rows.insertBefore(rows.children[i + 1], rows.children[i]); //Perform the switch
+                        switching = true; //The function has switched in this cycle
+                    }
+                }
+            }
+        }
+        function loadInfo(id, row){ //Load ticket info when it is expanded
+            var $this = $(row);
+            if($("#ticket"+id).length == 0) {
+                $.get("/tickets/"+id, function(html) {
+                    $this.after(html);
+                    $("#ticket"+id).collapse("toggle");
+                });
+            }
+        }
+        function loadOperators(id) //Load associated operators when a different type is selected
+        {
+            var types = document.getElementById("type"+id);
+            var specialists = document.getElementById("operator"+id);
+            var selectedType = types.options[types.selectedIndex].value;
+            specialists.innerHTML = "";
+            for(var i = 0; i < operators.length ; i++)
+            {
+                if(selectedType == operators[i].type)
+                {
+                    specialists.innerHTML += '<option id="' + id + 'operator' + operators[i].ID + '">#' + operators[i].ID+ " - " + operators[i].name + '</option>';
+                }
+            }
+        }
+        function updateTicket(id) //Update ticket with all values in the 'edit ticket' modal when save changes is clicked
+        {
+            var subject = document.getElementById("subject" + id).value;
+            var priority = 3 - document.getElementById("priority" + id).selectedIndex;
+            var status = document.getElementById("status" + id).selectedIndex;
+            var operatorContainer = document.getElementById("operator" + id);
+            var operator_id = operatorContainer.options[operatorContainer.selectedIndex].id.split("operator")[1];
+            var problemtypeContainer = document.getElementById("type" + id);
+            var problemtype_id = problemtypeContainer.options[problemtypeContainer.selectedIndex].id.split("type")[1];
+            $.post('/tickets/update', {
+                problem_id: id,
+                subject: subject,
+                priority: priority,
+                status: status,
+                operator_id: operator_id,
+                problemtype_id: problemtype_id
+            });
+            var scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+            location.reload();
+            document.documentElement.scrollTop = document.body.scrollTop = scrollTop;
+        }
+        function addNote(id) //Add a note to the ticket when save changes is clicked
+        {
+            var message = document.getElementById("message" + id).value;
+            $.post('/tickets/insertnote', {
+                problem_id: id,
+                operator_id: {{ user.operator_id }},
+                message: message
+            });
+            var scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+            location.reload();
+            document.documentElement.scrollTop = document.body.scrollTop = scrollTop;
+        }
+        function probHardDel(id, wareId) //Delete hardware
+        {
+            (id + " - " + wareId);
+            $.post('/tickets/probharddel', {
+                problem_id: id,
+                hardware_item_id: wareId
+            });
+        }
+        function probSoftDel(id, wareId) //Delete software
+        {
+            $.post('/tickets/probsoftdel', {
+                problem_id: id,
+                software_item_id: wareId
+            });
+        }
+        $("#hwsw-addnew").click(function() {
+            $("#hwsw-list").append("<tr>\n" +
+                "<td><select class='form-control'><option>Hardware</option><option>Software</option></select></td>\n" +
+                "<td><input type='text' class='form-control' placeholder='Name'></td>\n" +
+                "<td><input type='text' class='form-control' placeholder='Serial/License Key'></td>\n" +
+                "<td><a href='#'><i class='fa fa-save'></i></a> <a href='#'><i class='fa fa-times ml-1'></i></a></td>\n" +
+                "</tr>")
+        })
+        $(".ticket-extended").on("show.bs.collapse", function() {
+            $(this).parent().parent().prev().find(".ticket-item-expand").removeClass("fa-caret-square-o-down").addClass("fa-caret-square-o-up")
+        });
+        $(".ticket-extended").on("hide.bs.collapse", function() {
+            $(this).parent().parent().prev().find(".ticket-item-expand").removeClass("fa-caret-square-o-up").addClass("fa-caret-square-o-down")
+        });
+
+        (function() {
+            var url = window.location.href;
+            if (url.indexOf("?id=")) {
+                var id = parseInt(url.match(/\d+$/)[0]);
+                var $row = $("#Row-" + id);
+                loadInfo(id, $row);
+                $("html, body").animate({
+                    scrollTop: $row.offset().top
+                }, 1000);
+            }
+
+        })();
+    </script>
+{% endblock %}

@@ -1,0 +1,78 @@
+{# Author: Christopher Stevens #}
+{% if new %}<div class="row">{% endif %}
+    <form class="col mb-2 problem{% if  new %} new{% endif %}">
+        <div class="form-row">
+            <div class="col-md-10">
+                <div class="form-group">
+                    <label class="col-form-label">Subject</label>
+                    <input type="text" class="form-control" data-name="subject" required>
+                </div>
+            </div>
+            <div class="col-md-2 col-sm-6">
+                <div class="form-group">
+                    <label class="col-form-label">Priority</label>
+                    <select class="form-control " data-name="priority" required>
+                        <option value="3">High</option>
+                        <option value="2">Medium</option>
+                        <option value="1">Low</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+
+        <div class="form-row">
+            <div class="col">
+                <div class="form-group">
+                    <label class="col-form-label">Problem Type</label>
+                    {% if new %}<div class="tree"></div>{% else %}<input class="form-control" data-name="problemtype">{% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <table class="table">
+                <thead>
+                <tr>
+                    <th>Type</th>
+                    <th colspan="2">Details</th>
+                    <th></th>
+                </tr>
+                </thead>
+
+                <tbody class="hwsw-list">
+                {% if new %}
+                <tr>
+                    <td>
+                        <select class="form-control" data-name="hardsoftware">
+                            <option>Hardware</option>
+                            <option>Software</option>
+                        </select>
+                    </td>
+                    <td><input type="text" class="form-control" placeholder="Make & Model" data-name="makemodel"></td>
+                    <td><input type="text" class="form-control" placeholder="Serial Number" data-name="licenseserial"></td>
+                    <td><a href="#" data-name="add-hardsoftware"><i class="fa fa-plus ml-1"></i></a></td>
+                </tr>
+                {% endif %}
+                </tbody>
+            </table>
+        </div>
+        <div class="form-row">
+            <ul class="list-group notes">
+
+            </ul>
+        </div>
+
+        <div class="form-row">
+            <div class="col">
+                <label class="col-form-label">New Note</label>
+                <textarea class="form-control" rows="9" data-name="note" required></textarea>
+            </div>
+        </div>
+
+        <input type="submit" value="submit" hidden>
+    </form>
+
+    <button class="btn btn-outline-danger btn-block" onclick="$(this).closest('.row').remove();">Remove From Call</button>
+    <hr class="w-100"/>
+{% if new %}</div>{% endif %}

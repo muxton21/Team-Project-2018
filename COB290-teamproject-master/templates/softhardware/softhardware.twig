@@ -1,0 +1,327 @@
+{# Author: Alex Lowdon #}
+{% extends "template.twig" %}
+{% set active_page = "softhardware" %}
+{% block title %}Software/Hardware{% endblock %}
+{% block content %}
+    <!-- Card containing search boxes -->
+    <div class="row">
+        <div class="col-lg-2 col-md-12">
+            <div class="card">
+                <h4 class="card-header">Software and Hardware</h4>
+                <div class="card-body">
+                    <div class="form-group">
+                        <input type="text" class="form-control" id="filter-software" placeholder="Filter Software..."
+                               onchange="filterSoftware(this.value)">
+                    </div>
+                    <br/>
+                    <div class="form-group">
+                        <input type="text" class="form-control" id="filter-hardware" placeholder="Filter Hardware..."
+                               onchange="filterHardware(this.value)">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card containing the table listing the software and related information in the database -->
+        <div class="col-lg-5 col-md-12">
+            <div class="card">
+                <h5 class="card-header text-muted">Software</h5>
+                <table class="table table-hover" id="softwareTable">
+                    <thead>
+                    <tr>
+                        <th>Software name</th>
+                        <th>Quantity</th>
+                        <th></th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <!-- loops through every piece of Software in the database, and prints each Software's information into the table -->
+                    {% for software in software %}
+                        <tr class="table-item" id="sRow-{{ software.software_id }}"
+                            onclick="loadKeyModal('soft',{{ software.software_id }})">
+                            <td>{{ software.name }}</td>
+                            <td>{{ software.quantity }}</td>
+                            <td><i class="fa fa-caret-square-o-right float-right"></i></td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+                <div class="card-footer">
+                    <button class="btn btn-block btn-outline-primary mb-0" onclick="loadForm('soft','New',0)">Add
+                        Software
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card containing the table listing all the hardware and related information in the database -->
+        <div class="col-lg-5 col-md-12">
+            <div class="card">
+                <table class="table table-hover" id="hardwareTable">
+                    <h5 class="card-header text-muted">Hardware</h5>
+                    <thead>
+                    <tr>
+                        <th>Make</th>
+                        <th>Model</th>
+                        <th>Type</th>
+                        <th>Quantity</th>
+                        <th></th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <!-- loops through every piece of Hardware in the database, and prints each Hardware's information into the table -->
+                    {% for hardware in hardware %}
+                        <tr class="table-item" id="hRow-{{ hardware.hardware_id }}"
+                            onclick="loadKeyModal('hard',{{ hardware.hardware_id }})">
+                            <td>{{ hardware.make }}</td>
+                            <td>{{ hardware.model }}</td>
+                            <td>{{ hardware.type }}</td>
+                            <td>{{ hardware.quantity }}</td>
+                            <td><i class="fa fa-caret-square-o-right float-right"></i></td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+                <div class="card-footer">
+                    <button class="btn btn-block btn-outline-primary mb-0" onclick="loadForm('hard','New',0)">
+                        Add Hardware
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block modals %}
+
+    <!-- div that has the modal codes written to it when called -->
+    <div class="modal fade" id="modalEx"></div>
+
+{% endblock %}
+
+{% block js %}
+    <script>
+        /*
+        filterSoftware triggered whenever the user searches through the software on the database for anything matching a query input
+        checks through every software table row, and adds/keeps any where the query occurs in the name and removes any where this condition isn't met.
+         */
+        function filterSoftware(query) {
+            {% for software in software %}
+            if ("{{ software.name }}".toLowerCase().includes(query.toLowerCase())) {
+                document.getElementById("sRow-{{ software.software_id }}").innerHTML = '<td>{{ software.name }}</td><td>{{ software.quantity }}</td><td><i class="fa fa-caret-square-o-right float-right"></i></td>';
+            } else {
+                document.getElementById("sRow-{{ software.software_id }}").innerHTML = '';
+            }
+            {% endfor %}
+        }
+
+        /*
+        filterHardware triggered whenever the user searches through the hardware on the database for anything matching a query input
+        checks through every hardware table row, and adds/keeps any rows where the query occurs in either the make, model, or type of hardware
+        and removes any where this condition isn't met.
+         */
+        function filterHardware(query) {
+            {% for hardware in hardware %}
+            if ("{{ hardware.make }} {{ hardware.model }} {{ hardware.type }}".toLowerCase().includes(query.toLowerCase())) {
+                document.getElementById("hRow-{{ hardware.hardware_id }}").innerHTML = '<td>{{ hardware.make }}</td><td>{{ hardware.model }}</td><td>{{ hardware.type }}</td><td>{{ hardware.quantity }}</td><td><i class="fa fa-caret-square-o-right float-right"></i></td>';
+            } else {
+                document.getElementById("hRow-{{ hardware.hardware_id }}").innerHTML = '';
+            }
+            {% endfor %}
+        }
+
+        var tempId = 0; //Used globally in loadForm() and inputWare()
+
+        /*
+        loadForm is called when the user clicks the "Add New Software/Hardware" Button at the bottom of each table.
+        Its purpose is to get the modal code from another .twig file (either hardware-form.twig or software-form.twig) and display the code
+        so that the user can input the information required to add a new piece of Software or Hardware to the database.
+        */
+        function loadForm(type, change, id) {
+            tempId = id;
+            $.get('/softhardware/' + type + '/' + change + '/' + tempId, function (modalCode) {
+                $("#modalEx").html(modalCode);
+                $("#modalEx").modal();
+            });
+        }
+
+        /*
+        loadKeyModal is called whenever the user clicks on a row (a record containing the information about a piece of Software or Hardware)
+        on one of the two tables. Its purpose is to get the modal code from another .twig file (softhardware-modal.twig), with appropriate
+        information relating to the specific row clicked on. This modal code will display all the License Keys / Serial Numbers, and
+        expiry/purchased date for each individual item of the specific Software/Hardware clicked on. It also provides the user a platform
+        to enter new items.
+         */
+        function loadKeyModal(type, id) {
+            $.get('/softhardware/' + type + '/' + id, function (modalCode) {
+                $("#modalEx").html(modalCode);
+                $("#modalEx").modal();
+            });
+        }
+
+        /*
+        inputWare is a function that is triggered whenever the user clicks on the 'Confirm' button on either of the Software or Hardware input
+        forms (that are called and displayed by loadForm()). It checks the validity of the data that has been entered into the input form, and
+        if valid, will insert that information into the database.
+        */
+        function inputWare(type) {
+            if (type == "NewSoft") {
+                if (document.getElementById('software-name').value == "") {
+                    window.alert("please enter a valid name");
+                } else {
+                    $.post('/softhardware', {
+                        reference: type,
+                        name: document.getElementById('software-name').value
+                    }, function () {
+                        location.reload();
+                    });
+                }
+            } else if (type == "NewHard") {
+                if (document.getElementById('hardware-type').value == "Choose here") {
+                    window.alert("Please select a valid device type");
+                } else if (document.getElementById('hardware-make').value == "") {
+                    window.alert("Please enter a valid make");
+                } else if (document.getElementById('hardware-model').value == "") {
+                    window.alert("Please enter a valid model");
+                } else {
+                    $.post('/softhardware', {
+                        reference: type,
+                        make: document.getElementById('hardware-make').value,
+                        model: document.getElementById('hardware-model').value,
+                        deviceType: document.getElementById('hardware-type').value
+                    }, function () {
+                        location.reload();
+                    });
+                }
+            } else if (type == "EditSoft") {
+                if (document.getElementById('software-name').value == "") {
+                    window.alert("please enter a valid name");
+                } else {
+                    $.post('/softhardware', {
+                        reference: type,
+                        id: tempId,
+                        name: document.getElementById('software-name').value
+                    }, function () {
+                        location.reload();
+                    });
+                }
+            } else if (type == "EditHard") {
+                if (document.getElementById('hardware-make').value == "") {
+                    window.alert("Please enter a valid make");
+                } else if (document.getElementById('hardware-model').value == "") {
+                    window.alert("Please enter a valid model");
+                } else {
+                    $.post('/softhardware', {
+                        reference: type,
+                        id: tempId,
+                        make: document.getElementById('hardware-make').value,
+                        model: document.getElementById('hardware-model').value,
+                        deviceType: document.getElementById('hardware-type').value
+                    }, function () {
+                        location.reload();
+                    });
+                }
+            }
+        }
+
+        /*
+        addNewItem is called whenever the user presses the '+' button on the modal listing all the Licenses/Serials for a specific piece of
+        Software/Hardware. Firstly, it checks the validity of the information entered into the input fields, and if it is valid, it enters
+        them it into the database, as an individual item for the specific piece of Software/Hardware (that the modal lists the Licenses/Serials of).
+         */
+        function addNewItem(type, parentId) {
+            var rawDate = document.getElementById('exPuDate').value; //data as entered
+            var refinedDate = new Date(document.getElementById('exPuDate').value); //data in javascripts Date Object format
+
+            if (document.getElementById('liSeCode').value == "") {
+                window.alert("Please enter a valid License/Serial code");
+            } else {
+                if (type == "soft") {
+                    if (refinedDate == "Invalid Date" || !validateDate(rawDate, refinedDate, "expiry")) {
+                        window.alert("Please enter a valid date");
+                    } else {
+                        $.post('/softhardware', {
+                            reference: type + "wareNewItem",
+                            softwareRef: parentId,
+                            license: document.getElementById('liSeCode').value,
+                            expiry: rawDate
+
+                        }, function () {
+                            loadKeyModal(type, parentId);
+                        });
+                    }
+                } else if (type == "hard") {
+                    if (refinedDate == "Invalid Date" || !validateDate(rawDate, refinedDate, "purchase")) {
+                        window.alert("Please enter a valid date");
+                    } else {
+                        $.post('/softhardware', {
+                            reference: type + "wareNewItem",
+                            hardwareRef: parentId,
+                            serial: document.getElementById('liSeCode').value,
+                            purchased: rawDate
+                        }, function () {
+                            loadKeyModal(type, parentId);
+                        });
+                    }
+                }
+            }
+        }
+
+        /*
+        validateDate is called within addNewItem() and is used to check whether the date that is entered as input is valid. It returns false if
+        invalid, and true if valid.
+         */
+        function validateDate(rawDate, refDate, dateType) {
+            if (refDate == "Invalid Date") {
+                return false;
+            }
+            var currentDate = new Date();
+            var year = rawDate.slice(0, 4);
+            var month = rawDate.slice(5, 7);
+            var day = rawDate.slice(8, 10);
+
+
+            if (dateType == "expiry") {
+                //an expiry date cannot be before the current date, or in a ludicrously long time, and also must be a real date (e.g. 31st April is not a real date)
+                if (refDate < currentDate || year > 2200 || ((month == 4 || month == 6 || month == 7 || month == 9 || month == 11) && day == 31) || (month == 2 && day > 29) || (month == 2 && day == 29 && (year % 4 === 0))) {
+                    return false;
+                }
+            } else if (dateType == "purchase") {
+                //similarly, purchase dates cannot be after the current date, a ludicrously long time ago, and must be a real date.
+                if (refDate > currentDate || year < 1950 || ((month == 4 || month == 6 || month == 7 || month == 9 || month == 11) && day == 31) || (month == 2 && day > 29) || (month == 2 && day == 29 && (year % 4 === 0))) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        /*
+        deleteEntry is called whenever the user clicks on the trashcan icon next to a License/Serial entry (the record of an individual item) on
+        the modal listing all the Licenses/Serials and relevant dates for a specific piece of Software/Hardware. This function attempts to
+        delete the related record from the database, and if it cannot because the item is being referenced as a foreign key in another database
+        table, outputs an error message informing the user of the error.
+         */
+        function deleteEntry(type, itemId, parentId) {
+            $.delete = function (url, data, caught) {
+                return $.ajax({
+                    url: url,
+                    type: 'DELETE',
+                    data: data,
+                    success: caught
+                });
+            };
+
+            if (type == "soft" || type == "hard") {
+                $.delete('/softhardware', {
+                    reference: type,
+                    itemRef: itemId
+                }, function (caught) {
+                    if (caught) {
+                        window.alert("This item is referenced in a ticket already, and as such cannot be deleted at this time.")
+                    }
+                });
+                loadKeyModal(type, parentId);
+            }
+        }
+    </script>
+{% endblock %}

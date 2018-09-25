@@ -1,0 +1,34 @@
+{# Author: Harry Collins #}
+    <td colspan="6" class="p-0"> <!--creates dropdown expanded row-->
+        <div id="specialist{{ id }}" class="row collapse specialist-extended p-3 show"  data-parent="#specialist-body"> <!--id is relative to specialist
+-->            <div class="col-12">
+                <table class="table">
+                    <thead> <!--head of table -- column data titles-->
+                    <tr>
+                        <th>ID</th>
+                        <th>Age</th>
+                        <th>Priority</th>
+                        <th>Subject</th>
+                        <th></th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% for ticket in specialistTickets %} <!--loop through specialist's tickets returned in sql
+                                                          //substitute in values for each ticket open-->
+                       <tr class="specialist-item" onclick="window.location.href = '/tickets?id={{ ticket.problem_id }}'">
+                           <td>#{{ ticket.problem_id }}</td>
+                           <td>{{ ticket.age}}d</td>
+                           <td>{{ ticket.priority }}</td>
+                           <td style="text-overflow: ellipsis;">{{ ticket.subject }}</td>
+                           <td><i class="fa fa-caret-square-o-right"></i></td>
+                       </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <div class="col-12">
+                <button onClick="loadModal({{ id }})" class="btn btn-block btn-outline-primary">Edit Specialisms</button> <!--button to load modal on click-->
+            </div>
+
+        </div>
+    </td>

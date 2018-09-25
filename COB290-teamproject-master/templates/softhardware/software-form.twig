@@ -1,0 +1,19 @@
+<!-- Author: Alex Lowdon -->
+<!-- Modal code for the input form that allows users to enter new pieces of Software into the database -->
+<div class="modal-dialog modal-md">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h5 class="modal-title">{{ formType }} Software</h5>
+            <button type="button" class="close" onclick="location.reload()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label for="software-name">Name of Software</label>
+                <input type="text" class="form-control" id="software-name" placeholder="Name" value="{{ placeholder.name }}">
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-primary" data-dismiss="modal" onclick="inputWare('{{ formType }}Soft')">Confirm</button>
+        </div>
+    </div>
+</div>

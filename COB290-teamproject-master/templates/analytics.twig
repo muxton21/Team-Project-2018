@@ -1,0 +1,349 @@
+{# Author: Jessica Torri #}
+{% extends "template.twig" %}
+{% set active_page = "analytics" %}
+{% block title %}Analytics{% endblock %}
+
+{% block css %}
+    <link href="https://gitcdn.github.io/bootstrap-toggle/2.2.2/css/bootstrap-toggle.min.css" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+    <div class="row">
+        <div class="col-12 card-deck">
+
+            <!-- currently open tickets card -->
+            <div class="card text-center mb-4">
+                <div class="card-body">
+                    <h2>{{ openTickets[0].open_tickets }}</h2>
+                    <p class="card-text">Open Tickets</p>
+                </div>
+            </div>
+
+            <!-- average time taken to solve card -->
+            <div class="card text-center mb-4">
+                <div class="card-body">
+                    <h2>{{ averageTime[0].average_time }} hours</h2>
+                    <p class="card-text">Average time taken to resolve a ticket</p>
+                </div>
+            </div>
+
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-12 card-deck">
+
+            <!-- most occurring problem types card -->
+            <div class="card text-center mb-4">
+                <div class="card-body">
+                    <div id="problem-types-chart" style="width: 100%; height: 100%;"></div>
+                    <div id="problem-types-recommendation"><b> {{ top5ProblemType[1].0 }}</b> problems are the most
+                        occurring problem type.
+                        <br/>It is recommended that you look into the cause of this.
+                    </div>
+                    <div id="problem-types-table" style="display:none">
+                        <table class="table">
+                            <tbody>
+                            <!-- loop through data to add to table -->
+                            {% for problems in top5ProblemType %}
+                                <tr>
+                                    <td> {{ problems.0 }} </td>
+                                    <td>{{ problems.1 }} </td>
+                                </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <input id="problem-types-toggle" type="checkbox" data-toggle="toggle">
+                </div>
+            </div>
+
+            <!-- solved by each specialist card -->
+            <div class="card text-center mb-4">
+                <div class="card-body">
+                    <div id="num-solved-chart" style="width: 100%; height: 100%;"></div>
+                    <div id="num-solved-recommendation"><b>{{ solvedByEachSpecialist[1].0 }}</b> has solved the most
+                        problems at <b>{{ solvedByEachSpecialist[1].1 }}</b> tickets.
+                        <br/> It may be worth training more specialists in their specialism.
+                    </div>
+                    <div id="num-solved-table" style="display:none">
+                        <table class="table">
+                            <tbody>
+                            <!-- loop through data and add to table -->
+                            {% for numSolved in solvedByEachSpecialist %}
+                                <tr>
+                                    <td> {{ numSolved.0 }} </td>
+                                    <td>{{ numSolved.1 }} </td>
+                                </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <input id="num-solved-toggle" type="checkbox" data-toggle="toggle">
+                </div>
+            </div>
+
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-12 card-deck">
+
+            <!-- number of problems solved each day card -->
+            <div class="card text-center mb-4">
+                <div class="card-body">
+                    <div id="daily-solved-chart" style="width: 100%; height: 100%;"></div>
+                    <div id="daily-solved-table" style="display:none">
+                        <table class="table">
+                            <tbody>
+                            <!-- loop through data and add to table -->
+                            {% for numSolved in solvedEachDay %}
+                                <tr>
+                                    <td> {{ numSolved.0 }} </td>
+                                    <td>{{ numSolved.1 }} </td>
+                                </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <input id="daily-solved-toggle" type="checkbox" data-toggle="toggle">
+                </div>
+            </div>
+
+            <!-- number of tickets currently assigned to each specialist card -->
+            <div class="card text-center mb-4">
+                <div class="card-body">
+                    <div id="currently-assigned-chart" style="width: 100%; height: 100%;"></div>
+                    <div id="num-assigned-recommendation"><b>{{ assignedToEachSpecialist[1].0 }}</b> is currently
+                        assigned to the most tickets at <b>{{ assignedToEachSpecialist[1].1 }}</b> tickets.
+                        <br/> It may be worth training more specialists in their specialism, or assigning less problems
+                        to them currently.
+                    </div>
+                    <div id="currently-assigned-table" style="display:none">
+                        <table class="table">
+                            <tbody>
+                            <!-- loop through data and add to table -->
+                            {% for assigned in assignedToEachSpecialist %}
+                                <tr>
+                                    <td> {{ assigned.0 }} </td>
+                                    <td>{{ assigned.1 }} </td>
+                                </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <input id="currently-assigned-toggle" type="checkbox" data-toggle="toggle">
+                </div>
+            </div>
+
+        </div>
+    </div>
+{% endblock %}
+
+{% block js %}
+    <script src="https://www.gstatic.com/charts/loader.js"></script>
+    <script src="https://gitcdn.github.io/bootstrap-toggle/2.2.2/js/bootstrap-toggle.min.js"></script>
+    <script>
+        google.charts.load("current", {packages: ["corechart"]}); // load chart package
+        google.charts.setOnLoadCallback(drawProblemTypesChart);
+
+        // function to draw pie chart displaying most occurring problem types
+        function drawProblemTypesChart() {
+            // create data variable for the chart
+            var data = google.visualization.arrayToDataTable({{ top5ProblemType|json_encode|raw }});
+
+            // edit options of the chart
+            var options = {
+                title: 'Problem Types',
+                pieHole: 0.4, // size of the hole inside the chart
+                pieSliceText: 'none'
+            };
+
+            // create the chart
+            var chart = new google.visualization.PieChart(document.getElementById('problem-types-chart'));
+            chart.draw(data, options);
+        }
+
+        google.charts.load('current', {packages: ['corechart', 'bar']}); // load chart package
+        google.charts.setOnLoadCallback(drawNumSolvedChart);
+
+        // function to draw bar chart of number of solved problems by each specialist
+        function drawNumSolvedChart() {
+            // create data variable for the chart
+            var data = google.visualization.arrayToDataTable({{ solvedByEachSpecialist|json_encode|raw }});
+
+            // edit options of the chart
+            var options = {
+                title: 'Number of Tickets Solved by Each Specialist',
+                hAxis: {
+                    title: 'Name'
+                },
+                vAxis: {
+                    title: 'Number of Tickets'
+                },
+                legend: 'none'
+            };
+
+            // create the chart
+            var chart = new google.visualization.ColumnChart(document.getElementById('num-solved-chart'));
+            chart.draw(data, options);
+        }
+
+        google.charts.load('current', {'packages': ['corechart']}); // load chart package
+        google.charts.setOnLoadCallback(drawDailySolvedChart);
+
+        // create data variable for the daily solved chart
+        var solvedEachDayData = {{ solvedEachDay|json_encode|raw }};
+        for (var i = 1; i < solvedEachDayData.length; i++) {
+            solvedEachDayData[i][0] = new Date(solvedEachDayData[i][0]); // convert date from db to date to be used in chart
+        }
+
+        // function creating line chart to display the number of problems solved each day
+        function drawDailySolvedChart() {
+            // create data variable for the chart
+            var data = google.visualization.arrayToDataTable(solvedEachDayData);
+
+            // edit options of the chart
+            var options = {
+                title: 'Number of Tickets Solved Each Day',
+                hAxis: {
+                    title: 'Date'
+                },
+                vAxis: {
+                    title: 'Number of Tickets'
+                },
+                legend: 'none'
+            };
+
+            // create the chart
+            var chart = new google.visualization.LineChart(document.getElementById('daily-solved-chart'));
+            chart.draw(data, options);
+        }
+
+
+        google.charts.load('current', {packages: ['corechart', 'bar']}); // load chart package
+        google.charts.setOnLoadCallback(drawCurrentlyAssignedChart);
+
+        // function drawing a bar chart showing the number of tickets currently assigned to each specialist
+        function drawCurrentlyAssignedChart() {
+            // create data variable for the chart
+            var data = google.visualization.arrayToDataTable(
+                    {{ assignedToEachSpecialist|json_encode|raw }}
+            );
+
+            // edit options of the chart
+            var options = {
+                title: 'Number of Tickets Currently Assigned to Each Specialist',
+                chartArea: {width: '60%'},
+                hAxis: {
+                    title: 'Number of Tickets',
+                    minValue: 0
+                },
+                vAxis: {
+                    title: 'Name'
+                },
+                legend: {position: "none"}
+            };
+
+            // create the chart
+            var chart = new google.visualization.BarChart(document.getElementById('currently-assigned-chart'));
+            chart.draw(data, options);
+        }
+
+
+        // problem types toggle button settings
+        $('#problem-types-toggle').change(function () {
+            if ($(this).prop('checked') == true) {
+                // hide chart and recommendation and show table
+                $("#problem-types-chart").hide();
+                $("#problem-types-recommendation").hide();
+                $("#problem-types-table").show();
+            }
+            else {
+                // show chart and recommendation and hide table
+                $("#problem-types-chart").show();
+                $("#problem-types-recommendation").show();
+                $("#problem-types-table").hide();
+            }
+        });
+
+        // edit text in toggle button
+        $('#problem-types-toggle').bootstrapToggle({
+            on: 'Graph',
+            off: 'Table'
+        });
+
+
+        // number solved toggle button settings
+        $('#num-solved-toggle').change(function () {
+            if ($(this).prop('checked') == true) {
+                // hide chart and recommendation and show table
+                $("#num-solved-chart").hide();
+                $("#num-solved-recommendation").hide();
+                $("#num-solved-table").show();
+            }
+            else {
+                // show chart and recommendation and hide table
+                $("#num-solved-chart").show();
+                $("#num-solved-recommendation").show();
+                $("#num-solved-table").hide();
+            }
+        });
+
+        // edit text in toggle button
+        $('#num-solved-toggle').bootstrapToggle({
+            on: 'Graph',
+            off: 'Table'
+        });
+
+
+        // daily solved toggle button settings
+        $('#daily-solved-toggle').change(function () {
+            if ($(this).prop('checked') == true) {
+                // hide chart and show table
+                $("#daily-solved-chart").hide();
+                $("#daily-solved-table").show();
+            }
+            else {
+                // show chart and hide table
+                $("#daily-solved-chart").show();
+                $("#daily-solved-table").hide();
+            }
+        });
+
+        // edit text in toggle button
+        $('#daily-solved-toggle').bootstrapToggle({
+            on: 'Graph',
+            off: 'Table'
+        });
+
+
+        // currently assigned tickets toggle button settings
+        $('#currently-assigned-toggle').change(function () {
+            if ($(this).prop('checked') == true) {
+                // hide chart and recommendation and show table
+                $("#currently-assigned-chart").hide();
+                $("#num-assigned-recommendation").hide();
+                $("#currently-assigned-table").show();
+            }
+            else {
+                // show chart and recommendation and hide table
+                $("#currently-assigned-chart").show();
+                $("#num-assigned-recommendation").show();
+                $("#currently-assigned-table").hide();
+            }
+        });
+
+        // edit text in toggle button
+        $('#currently-assigned-toggle').bootstrapToggle({
+            on: 'Graph',
+            off: 'Table'
+        });
+    </script>
+{% endblock %}

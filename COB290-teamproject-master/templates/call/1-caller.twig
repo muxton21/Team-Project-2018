@@ -1,0 +1,75 @@
+{# Author: Christopher Stevens #}
+{% extends "call/call-template.twig" %}
+{% set percentage = 5 %}
+
+{% block content %}
+    <div class="col-lg-7 col-md-9 col-sm-12 ml-auto mr-auto mt-4">
+
+        <div class="form-row">
+            <div class="form-group w-100 mb-0">
+                <label>Employee Name/ID</label>
+                <input type="text" class="form-control" id="employee-input" placeholder="Employee Name/ID">
+            </div>
+        </div>
+        <hr />
+
+        <div class="row">
+            <div class="col card mb-3">
+                <div class="card-header">
+                    <h4 class="card-title mb-0" id="employee-name"></h4>
+                </div>
+                <div class="card-body" id="employee-details">
+                </div>
+            </div>
+        </div>
+
+    </div>
+{% endblock %}
+
+{% block js %}
+<script>
+    $("#proceedBtn").prop("disabled", true);
+    $("#proceedBtn").off().on("click", function() {
+        $("#v-pills-problem").load("/record-call/1", caller);
+        $("#v-pills-findEmployee-tab").removeClass("active text-light").addClass("text-dark");
+        $("#v-pills-problem-tab").removeClass("text-dark").addClass("active text-light");
+        $("#v-pills-findEmployee").removeClass("active show");
+        $("#v-pills-problem").addClass("active show");
+    });
+
+    $("#backBtn").prop("disabled", true);
+
+    var caller = {};
+
+    var employees = new Bloodhound({
+        datumTokenizer: Bloodhound.tokenizers.obj.whitespace("employee_id", "first_name", "last_name"),
+        queryTokenizer: Bloodhound.tokenizers.whitespace,
+        identify: function(obj) { return obj.employee_id },
+        local: {{ employees|json_encode|raw }}
+    });
+
+    $("#employee-input").typeahead(null, {
+        name: "employees",
+        source: employees,
+        display: "Name",
+        templates: {
+            suggestion: function(obj) {return "<div><strong>" + obj.first_name + " " + obj.last_name + "</strong> - " + obj.job_title + " (#" + obj.employee_id + ")</div>"}
+        }
+    }).bind("typeahead:autocomplete", loadEmployee)
+        .bind("typeahead:select", loadEmployee);
+
+    function loadEmployee(e, suggestion) {
+        $("#employee-name").html(suggestion.first_name + " " + suggestion.last_name + " <small class='text-muted'>#" + suggestion.employee_id + "</small>");
+        $("#employee-details").html(
+            "<ul><li><b>Department:</b> " + suggestion.dept + "</li>" +
+            "<li><b>Title:</b> " + suggestion.job_title + "</li>" +
+            "<li><b>Phone:</b> " + suggestion.phone + "</li>" +
+            "<li><b>Email:</b> " + suggestion.email + "</li></ul>"
+        );
+        caller = suggestion;
+        $("#proceedBtn").prop("disabled", false);
+    }
+
+    //# sourceURL=1-caller.js
+</script>
+{% endblock %}

@@ -1,0 +1,79 @@
+{# Author: Christopher Stevens #}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}{% endblock %} :: Make-It-All Helpdesk</title>
+
+    <link rel="stylesheet" href="css/bootstrap-material-design.min.css">
+    <style>
+        .navbar {
+            background-image: linear-gradient(to left, #667eea 0%, #764ba2 100%);
+        }
+    </style>
+
+    <link href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700" rel="stylesheet" >
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link href="css/font-awesome.min.css" rel="stylesheet">
+    <link href="css/typeaheadjs.css" rel="stylesheet">
+    <link href="css/bootstrap-treeview.css" rel="stylesheet">
+    {% block css %}{% endblock %}
+</head>
+<body>
+<header class="navbar navbar-expand-lg navbar-dark">
+    <a class="navbar-brand" href="/">Make-It-All</a>
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navButtons">
+        <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <div class="collapse navbar-collapse" id="navButtons">
+        <ul class="navbar-nav mr-auto">
+            <li class="nav-item">
+                <a class="nav-link{% if active_page == "tickets" %} active{% endif %}" href="/tickets">Tickets</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link{% if active_page == "specialists" %} active{% endif %}" href="/specialists">Specialists</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link{% if active_page == "analytics" %} active{% endif %}" href="/analytics">Analytics</a>
+            </li>
+            <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle{% if active_page == "softhardware" or active_page == "problemtypes" %} active{% endif %}" href="#" data-toggle="dropdown">
+                    Configure
+                </a>
+                <div class="dropdown-menu">
+                    <a class="dropdown-item{% if active_page == "softhardware" %} active{% endif %}" href="/softhardware">Software/Hardware</a>
+                    <a class="dropdown-item{% if active_page == "problemtypes" %} active{% endif %}" href="/problemtypes">Problem Types</a>
+                </div>
+            </li>
+        </ul>
+        {% if is_granted("IS_AUTHENTICATED_FULLY") %}
+        <ul class="navbar-nav">
+            <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle" href="#" data-toggle="dropdown">Steve</a>
+
+                <div class="dropdown-menu dropdown-menu-right">
+                    <a class="dropdown-item" href="/logout">Logout</a>
+                </div>
+            </li>
+        </ul>
+        {% endif %}
+    </div>
+</header>
+
+<div class="container-fluid p-4">
+    {% block content %}{% endblock %}
+</div>
+<div id="modal-container">
+    {% block modals %}{% endblock %}
+</div>
+
+<script src="js/jquery-3.2.1.min.js"></script>
+<script src="js/popper.js"></script>
+<script src="js/typeahead.js"></script>
+<script src="js/bootstrap-treeview.js"></script>
+<script src="js/bootstrap-material-design.min.js"></script>
+<script src="js/bootstrap-treeview.js"></script>
+{% block js %}{% endblock %}
+</body>
+</html>

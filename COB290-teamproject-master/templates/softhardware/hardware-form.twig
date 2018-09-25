@@ -1,0 +1,49 @@
+<!-- Author: Alex Lowdon -->
+<!-- Modal code for the input form that allows users to enter new pieces of Hardware into the database -->
+<div class="modal-dialog modal-md">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h5 class="modal-title">{{ formType }} Hardware</h5>
+            <button type="button" class="close" onclick="location.reload()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label for="hardware-manufacturer">Make</label>
+                <input type="text" class="form-control" id="hardware-make" placeholder="Make"
+                       value="{{ placeholder.make }}">
+            </div>
+            <div class="form-group">
+                <label for="hardware-model">Model</label>
+                <input type="text" class="form-control" id="hardware-model" placeholder="Model"
+                       value="{{ placeholder.model }}">
+            </div>
+            <div class="form-group">
+                <label for="hardware-type">Type of Hardware</label>
+                <select class="form-control" id="hardware-type">
+                    <option selected hidden>{{ placeholder.deviceType }}</option>
+                    <option>Desktop</option>
+                    <option>Laptop</option>
+                    <option>Projector</option>
+                    <option>Television</option>
+                    <option>ID Card-Scanner</option>
+                    <option>Keyboard</option>
+                    <option>Mouse</option>
+                    <option>Router</option>
+                    <option>Server</option>
+                    <option>Scanner</option>
+                    <option>Fax Machine</option>
+                    <option>Phone</option>
+                    <option>Tablet Computer</option>
+                    <option>Monitor</option>
+                    <option>Printer</option>
+                    <option>Other</option>
+                </select>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-primary" data-dismiss="modal"
+                    onclick="inputWare('{{ formType }}Hard')">Confirm
+            </button>
+        </div>
+    </div>
+</div>

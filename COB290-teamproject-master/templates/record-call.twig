@@ -1,0 +1,61 @@
+{# Author: Christopher Stevens #}
+{% extends "template.twig" %}
+{% set active_page = "recordcall" %}
+{% block title %}Record Call{% endblock %}
+{% block css %}
+    <style>
+        .footer {
+            line-height: 60px;
+            background-color: #f5f5f5;
+        }
+        footer button {
+            position: relative;
+            top: 10px;
+        }
+    </style>
+{% endblock %}
+{% block content %}
+<div class="row mb-5">
+
+    <div class="col-md-2">
+        <ul class="card nav nav-pills flex-column" id="v-pills-tab">
+            <li class="nav-item">
+                <a class="nav-link active" id="v-pills-findEmployee-tab">Caller</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" id="v-pills-problem-tab">Problems</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" id="v-pills-specialist-tab">Specialists</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" id="v-pills-summary-tab">Summary</a>
+            </li>
+        </ul>
+    </div>
+
+    <div class="col-md-10" >
+        <div class="card tab-content border-primary" id="v-pills-tabContent">
+            <div class="tab-pane fade show active" id="v-pills-findEmployee"></div>
+            <div class="tab-pane fade" id="v-pills-problem"></div>
+            <div class="tab-pane fade" id="v-pills-specialist"></div>
+            <div class="tab-pane fade" id="v-pills-summary"></div>
+        </div>
+    </div>
+
+</div>
+
+<footer class="footer fixed-bottom">
+    <div class="container" style="width: 400px;">
+        <div class="row mb-3">
+            <div class="col"><button id="proceedBtn" class="btn btn-success btn-block mb-2" style="background-color: #b2ffb4;">Next</button></div>
+        </div>
+    </div>
+</footer>
+{% endblock %}
+
+{% block js %}
+<script>
+    $("#v-pills-findEmployee").load("/record-call/0", {}); // Empty object forces POST request.
+</script>
+{% endblock %}

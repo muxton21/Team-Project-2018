@@ -1,0 +1,130 @@
+{# Author: Harry Collins #}
+{% extends "template.twig" %}
+{% set active_page = "specialists" %}
+{% block title %}Specialists{% endblock %}
+
+{% block css %}
+    <style>
+        .specialist-item {
+            cursor: pointer;
+        }
+        .specialist-item:hover {
+            background-color: rgba(0,0,0,.075);
+        }
+        .specialist-extended-wrap > td {
+            box-shadow: inset 0px 11px 8px -10px #000, inset 0px -11px 8px -10px #000;
+        }
+        .specialist-info {
+            border-right: 1px solid rgba(0,0,0,.25);
+        }
+        .specialist-extended.collapse.show {
+            display: flex!important;
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-2 col-md-3">
+        <div class="card" align="center">
+            <h5 class="card-header">Specialists</h5> <!--page title card-->
+
+        </div>
+    </div>
+    <div class="col-lg-10 col-md-9" > <!--specialists table card-->
+        <div class="card">
+            <table class="table">
+                <thead> <!--head of table -- column data titles-->
+                <tr>
+                    <th>ID</th>
+                    <th>First Name</th>
+                    <th>Surname</th>
+                    <th>Specialisms</th>
+                    <th># of Open Tickets</th>
+                    <th></th>
+                </tr>
+                </thead>
+                <tbody id="specialist-body" data-children=".specialist-extended">
+
+                {% for specialist in specialists %} <!--loop through all returned data from sql query -- return each element
+                                                    create new row for each corresponding row in database-->
+
+                    <tr onClick="loadInfo({{ specialist.operator_id }}, this)" id="Row-{{ specialist.operator_id }}" class="specialist-item" data-toggle="collapse" data-target="#specialist3" data-parent="#specialist-body">
+                        <td>#{{ specialist.operator_id }}</td>
+                        <td>{{ specialist.first_name }}</td>
+                        <td>{{ specialist.last_name }}</td>
+
+                        <td id="specialist-{{ specialist.operator_id }}-badges">
+                            {% for specialism in specialist.specialisms|split(',') %} <!--loop through each specialists specialisms from sql-->
+                            <span class="badge badge-secondary">{{ specialism }}</span> <!--create badge for each specialism inside row-->
+                            {% endfor %}
+
+                        </td>
+                        <td>{{ specialist.open_tickets }}</td>
+                        <td><i class="fa fa-caret-square-o-down" ></i></td>
+                    </tr>
+
+                {% endfor %}
+
+
+
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block modals %}
+
+<div class="modal" tabindex="-1" id="modal">
+</div>
+
+{% endblock %}
+
+
+{% block js %}
+    <script>
+
+        function loadInfo(id, row){  //function for onClick row expansion
+            var $this = $(row);
+
+            if($("#specialist"+id).length===0){ //check if expanded row is open
+                $.get("/specialists/"+id, function(html){
+                    $this.after(html);
+                });
+
+            }
+            else{
+                $("#specialist"+id).toggleClass("show"); //toggle row expansion
+               }
+        }
+
+
+
+        function loadModal(id){ //function for onClick modal open
+         $.get("/specialists/"+id+"/specialisms", function(html){  //pass ID
+           $("#modal").html(html);
+         $("#modal").modal(); //open modal
+        });
+
+        }
+
+        (function() {
+            var url = window.location.href;
+            if (url.indexOf("?id=")) {
+                var id = parseInt(url.match(/\d+$/)[0]);
+                var $row = $("#Row-" + id);
+                loadInfo(id, $row);
+                $("html, body").animate({
+                    scrollTop: $row.offset().top
+                }, 1000);
+            }
+
+        })();
+        </script>
+
+{%  endblock %}
+
+
+

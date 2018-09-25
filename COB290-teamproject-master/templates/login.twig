@@ -1,0 +1,32 @@
+{% extends "template.twig" %}
+{% set active_page = "login" %}
+{% block title %}Login{% endblock %}
+
+{% block content %}
+    <div class="row justify-content-center" style="margin-top: 15%;">
+        <div class="col-md-5 ml-auto mr-auto">
+            <div class="card">
+                <h4 class="card-header">Please Login</h4>
+                <div class="card-body">
+                    <div class="row">
+                        {% if error %}
+                        <div class="alert alert-danger w-100">
+                            <b>Error: </b>
+                            {{ error }}
+                        </div>
+                        {% endif %}
+                    </div>
+                    <form action="{{ path('api_login') }}" method="post">
+                        <div class="form-group">
+                            <input type="email" class="form-control form-control-lg" name="_username" placeholder="Email" value="{{ last_email }}">
+                        </div>
+                        <div class="form-group">
+                            <input type="password" class="form-control form-control-lg" name="_password" placeholder="Password">
+                        </div>
+                        <button type="submit" class="btn btn-outline-primary float-right">Login</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

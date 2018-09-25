@@ -1,0 +1,18 @@
+{# Author: Christopher Stevens #}
+{% extends "call/call-template.twig" %}
+{% set percentage = 100 %}
+
+{% block content %}
+    <div class="col-lg-7 col-md-9 col-sm-12 ml-auto mr-auto mt-4 text-center">
+        <h3 class="text-success">Write Successful<i class="fa fa-check ml-2"></i></h3>
+        <p class="lead">All problems have been created/updated, and call notes recorded.</p>
+    </div>
+{% endblock %}
+
+{% block js %}
+<script>
+    $("#proceedBtn").text("Close").off().click(function() {
+        window.location.href = "/";
+    });
+</script>
+{% endblock %}

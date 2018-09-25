@@ -1,0 +1,139 @@
+{% extends "call/call-template.twig" %}
+{% set percentage = 66 %}
+
+{% block css %}
+<style>
+    #specialistsTable > tbody > tr {
+        cursor: pointer;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+    <div class="row p-4">
+        <div class="col-6">
+            <div class="row">
+                <h4 class="w-100 text-center">Problems</h4>
+                <div id="ticket-list" class="list-group border">
+                    {% for problem in existingProblems %}
+                    <a href="#{{ problem.problem_id }}-specialist-select" class="list-group-item list-group-item-action flex-column align-items-start" data-toggle="list" data-problem="{{ problem.problem_id }}">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h5 class="mb-1">{{ problem.subject }}</h5>
+                            <small>#{{ problem.problem_id }}</small>
+                        </div>
+                        <p class="mb-1">Assigned specialist: <span id="{{ problem.problem_id }}-specialist" data-id="{{ problem.operator_id }}">{{ problem.first_name ~ " " ~ problem.last_name }}</span></p>
+                    </a>
+                    {% endfor %}
+                    {% for problem in newProblems %}
+                    <a href="#new-{{ loop.index0 }}-specialist-select" class="list-group-item list-group-item-action flex-column align-items-start" data-toggle="list" data-problem="new-{{ loop.index0 }}">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h5 class="mb-1">{{ problem.subject }}</h5>
+                            <small>New Ticket</small>
+                        </div>
+                        <p class="mb-1">Assigned specialist: <span id="new-{{ loop.index0 }}-specialist" data-id=""></span></p>
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        <div class="col-6">
+            <div class="tab-content">
+            {% for problem in existingProblems %}
+                <div class="tab-pane" id="{{ problem.problem_id }}-specialist-select" data-id="{{ problem.problem_id }}">
+                    <h4 class="w-100 text-center">Assign Specialist</h4>
+                    <table class="table">
+                        <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Specialisms</th>
+                            <th>Open Tickets</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {% for specialist in problem.specialists %}
+                            <tr data-id="{{ specialist.operator_id }}">
+                                <td>{{ specialist.first_name ~ " " ~ specialist.last_name }}</td>
+                                <td>{{ specialist.type }}</td>
+                                <td>{{ specialist.open_tickets }}</td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% endfor %}
+            {% for problem in newProblems %}
+                <div class="tab-pane" id="new-{{ loop.index0 }}-specialist-select" data-id="new-{{ loop.index0 }}">
+                    <h4 class="w-100 text-center">Assign Specialist</h4>
+                    <table class="table specialist-table">
+                        <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Specialisms</th>
+                            <th>Open Tickets</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {% for specialist in problem.specialists %}
+                            <tr data-id="{{ specialist.operator_id }}">
+                                <td>{{ specialist.first_name ~ " " ~ specialist.last_name }}</td>
+                                <td>{{ specialist.type }}</td>
+                                <td>{{ specialist.open_tickets }}</td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% endfor %}
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block js %}
+<script>
+    var final, valid;
+    $("#proceedBtn").prop("disabled", true);
+    $("#proceedBtn").off().on("click", function() { // When submitting...
+        valid = true;
+
+        $("#ticket-list > a").each(function() { // For each problem...
+            for (var i=0; i < problems.length; i++) { // Find the relevant problem in the list of problems...
+                if (problems[i].subject === $(this).find("h5").text()) {
+                    problems[i].operator_id = parseInt($(this).find("span").data("id")); // Set the operator ID
+                    problems[i].operator_name = $(this).find("span").text(); // and name.
+                }
+            }
+        });
+
+        if (valid) {
+            $("#v-pills-specialist").load("/record-call/3", {problems: problems});
+            $("#v-pills-problem-tab").removeClass("active text-light").addClass("text-dark");
+            $("#v-pills-specialist-tab").removeClass("text-dark").addClass("active text-light");
+            $("#v-pills-problem").removeClass("active show");
+            $("#v-pills-specialist").addClass("active show");
+        }
+    });
+
+    problems = {{ newProblems|json_encode|raw }}.concat({{ existingProblems|json_encode|raw }});
+
+    $(document)
+        .on("click", "div.tab-pane.active tr", function(e) {
+            var $this = $(e.currentTarget);
+            var problemID = $this.parent().parent().parent().data("id");
+            $this.siblings().removeClass("table-primary");
+            $this.addClass("table-primary");
+            $("#" + problemID + "-specialist").text($this.find("td").first().text()).data("id", $this.data("id"));
+
+            var complete = true;
+            $("#ticket-list > a").each(function() {
+                if (!$(this).find("span").data("id")) complete = false
+            });
+            $("#proceedBtn").prop("disabled", !complete)
+
+        });
+
+
+    //# sourceURL=3-specialist.js
+</script>
+
+{% endblock %}

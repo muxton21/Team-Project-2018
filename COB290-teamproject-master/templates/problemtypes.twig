@@ -1,0 +1,130 @@
+{# Author: Alex Lowdon #}
+{% extends "template.twig" %}
+{% set active_page = "problemtypes" %}
+{% block title %}Problem Types{% endblock %}
+{% block content %}
+    <div class="row">
+        <!-- Card containing the primary table that will list all the problem types in the database and their appropriate information -->
+        <div class="col-2"></div>
+        <div class="col-lg-4 col-md-12">
+            <div class="card">
+                <h4 class="card-header">Problem types</h4>
+                <table class="table table-hover" id="parentTable">
+                    <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Problem type</th>
+                        <th>Parent ID</th>
+                        <th># of children</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% for probTypes in probTypes %}
+                        <tr class="table-item" onclick="loadChildren({{ probTypes.problemtype_id }})">
+                            <td>{{ probTypes.problemtype_id }}</td>
+                            <td>{{ probTypes.type }}</td>
+                            <td>{% if probTypes.parent_id == '' %}N/A{% else %}{{ probTypes.parent_id }}{% endif %}</td>
+                            <td>{{ probTypes.children }}<i class="fa fa-caret-square-o-right float-right"></i></td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+                <div class="card-footer">
+                    <button class="btn btn-block btn-outline-primary mb-0" data-toggle="modal" data-target="#newProbType">Add new Problem Type</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-1"></div>
+
+        <!-- Card containing a secondary table that will be used to display the information about children problem types -->
+        <div class="col-lg-3 col-md-12" id="childrenTable">
+            <div class="card">
+                <h5 class="card-header text-muted">Click a problem type to view its children problem types here...</h5>
+                <table class="table table-hover" id="hardwareTable">
+                    <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Problem type</th>
+                    </tr>
+                    </thead>
+                </table>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block modals %}
+    <!-- Modal that opens when the user clicks the 'Add new problem type' button at the bottom of the primary table on the page. It is a form that lets the user input information for entering a new problemtype into the database. -->
+    <div class="modal fade" id="newProbType">
+        <div class="modal-dialog modal-md">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">New problem type</h5>
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="problemtype-name">Problem type name</label>
+                        <input type="text" class="form-control" id="problemtype-name" placeholder="Name">
+                    </div>
+                    <div class="form-group">
+                        <label for="problemtype-parent">Parent problem type</label>
+                        <select class="form-control" id="problemtype-parent">
+                            <option selected hidden>Choose here...</option>
+                            {% for probTypes in probTypes %}
+                                <option>{{ probTypes.type }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" data-dismiss="modal" onclick="addProblemType()">Confirm</button>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block js %}
+    <script>
+        /*
+        loadChildren is a function that is called whenever the user clicks on a row (a problem type record) in the table listing all the
+        problem types in the database. It gets the data about any children (more specific) problem types of the clicked problem type in
+        the database, and displays them in a second table on the right of the problemtypes page.
+        */
+        function loadChildren(parentId){
+            $.get('/problemtypes/'+parentId, function(cardCode){
+                $('#childrenTable').html(cardCode);
+            })
+        }
+
+        /*
+        addProblemType is a function that is called whenever the user clicks the 'Confirm' button at the bottom of the input form for entering
+        a new Problem Type into the database. It firstly checks the validity of the data in the input form, and if it is all valid, inserts it
+        into the database.
+         */
+        function addProblemType(){
+            parentName = document.getElementById('problemtype-parent').value;
+            parentId = null;
+
+            {% for probTypes in probTypes %}
+            if(parentName == "{{ probTypes.type }}"){
+                parentId = {{ probTypes.problemtype_id }};
+            }{% endfor %}
+
+            if(parentName == 'Choose here...'){
+                window.alert("Please enter a valid parent problem type.");
+            }else if(document.getElementById('problemtype-name').value == ''){
+                window.alert("Please enter a valid problem type name.");
+            }else{
+                $.post("/problemtypes", {
+                    name: document.getElementById('problemtype-name').value,
+                    parent: parentId
+                }, function(){
+                    location.reload();
+                })
+            }
+        }
+    </script>
+{% endblock %}

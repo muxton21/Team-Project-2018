@@ -1,0 +1,10 @@
+{# Author: Christopher Stevens #}
+{% block css %}{% endblock %}
+
+<div class="progress" style="height: 15px;">
+    <div class="progress-bar bg-{% if percentage == 100 %}success{% elseif percentage == 5 %}danger{% else %}warning{% endif %}" style="width: {{ percentage }}%"></div>
+</div>
+
+{% block content %}{% endblock %}
+
+{% block js %}{% endblock %}

@@ -1,0 +1,255 @@
+{# Author: Joe Penny #}
+<tr id="ticketInfoWrapper{{ id }}" class="ticket-extended-wrap">
+    <td colspan="5" class="p-0">
+        <div id="ticket{{ id }}" class="row collapse ticket-extended p-3" data-parent="#ticket-body">
+            <div class="col-lg-2 col-md-3 ticket-info"> <!--Basic information of the ticket-->
+
+                {% for ticketInfo in ticketInfo %} {# Load ticket info #}
+                    <h5>From</h5>
+                    <p>{{ ticketInfo.EmpFirst }}</p>
+                    <h5>Assigned To</h5>
+                    <p>{{ ticketInfo.OpFirst }}</p>
+                    <h5>Problem Type</h5>
+                    <p>{{ ticketInfo.type }}</p>
+                    <h5>Last Updated</h5>
+                    <p>{{ ticketInfo.last_updated|date('jS F Y') }}</p>
+                {% endfor %}
+
+                <button class="btn btn-block btn-outline-primary" data-toggle="modal" data-target="#modal{{ id }}">Edit Ticket</button>
+                <button class="btn btn-block btn-outline-primary" data-toggle="modal" data-target="#modal-note{{ id }}">Add Note</button>
+            </div>
+            <div class="col-lg-10 col-md-9 ticket-log">
+                <table class="table"> <!--Table to store hardware and software of a give ticket-->
+                    <thead>
+                    <tr>
+                        <th>Type</th>
+                        <th>Name</th>
+                        <th>Serial/License Key</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+
+                    {% for ticketHardware in ticketHardware %}
+                        <tr>
+                            <td>{{ ticketHardware.type }}</td>
+                            <td>{{ ticketHardware.make }} - {{ ticketHardware.model }}</td>
+                            <td>{{ ticketHardware.serial_no }}</td>
+                        </tr>
+                    {% endfor %}
+                    {% for ticketSoftware in ticketSoftware %}
+                        <tr>
+                            <td>Software</td>
+                            <td>{{ ticketSoftware.name }}</td>
+                            <td>{{ ticketSoftware.license_key }}</td>
+                        </tr>
+                    {% endfor %}
+
+                    </tbody>
+                </table>
+                <hr />
+                <ul class="list-group">
+                    {% for ticketMessage in ticketMessage %}
+
+                        {% set difference = date(ticketMessage.time).diff(date('now')) %} {# Change the date the ticket was received into it's age, and make it readable #}
+                        {% if difference.d < 1 %}
+                            {% if difference.h <1 %}
+                                {% set age = "Just now" %}
+                            {% else %}
+                                {% set age = difference.h ~ "h ago" %}
+                            {% endif %}
+                        {% else %}
+                            {% set age = difference.days ~ "d ago" %}
+                        {% endif %}
+
+                        {% if ticketMessage.type == "note" %} {# Is the message a note or a call? #}
+                            {% set icon = "sticky-note" %}
+                        {% else %}
+                            {% set icon = "phone" %}
+                        {% endif %}
+
+                        <div class="list-group-item flex-column align-items-start pt-0"> <!-- Show all messages related with the ticket -->
+                            <div class="d-flex w-100 justify-content-between">
+                                <div class="d-flex">
+                                    <h5 class="mb-1"><i class="fa fa-{{ icon }} mr-1"></i> {{ ticketMessage.first_name }}</h5>
+                                </div>
+                                <small>{{ age }}</small>
+                            </div>
+                            <p>{{ ticketMessage.message }}</p>
+                        </div>
+                    {% endfor %}
+                </ul>
+            </div>
+            <div id="modals{{ id }}"></div>
+        </div>
+    </td>
+</tr>
+
+<script> // Modals appended to modal wrapper via javascript, they won't display properly if included as part of the table row.
+    {% for ticketInfo in ticketInfo %}
+
+    var operators =  [{% for relatedOperator in relatedOperators %}{name: "{{ relatedOperator.first_name }}", type: "{{ relatedOperator.type }}", ID: "{{ relatedOperator.operator_id }}"},{% endfor %}];
+
+    $("#modals{{ id }}").append(
+        '<div class="modal" id="modal{{ id }}" >\n' +
+        '        <div class="modal-dialog modal-lg">\n' +
+        '            <div class="modal-content">\n' +
+        '                <div class="modal-header">\n' +
+        '                    <h5 class="modal-title">Ticket {{ id }}</h5>\n' +
+        '                    <button type="button" class="close" data-dismiss="modal" >&times;</button>\n' +
+        '                </div>\n' +
+        '                <div class="modal-body">\n' +
+        '                    <div class="form-row">\n' +
+        '                        <div class="col-md-8">\n' +
+        '                            <div class="form-group">\n' +
+
+        '                                <label class="col-form-label">Subject</label>\n' +
+        '                                <input id="subject{{ id }}" type="text" class="form-control" value="{{ ticketInfo.subject }}">\n' +
+        '                            </div>\n' +
+        '                        </div>\n' +
+        '                        <div class="col-md-2 col-sm-6">\n' +
+        '                            <div class="form-group">\n' +
+        '                                <label class="col-form-label">Priority</label>\n' +
+
+            {% set high = "" %}{% set medium = "" %}{% set low = "" %}
+            {% if ticketInfo.priority == 3 %}
+                {% set high = "selected" %}
+            {% elseif ticketInfo.priority == 2 %}
+                {% set medium = "selected" %}
+            {% else %}
+                {% set low = "selected" %}
+            {% endif %}
+
+        '                                <select id="priority{{ id }}" class="form-control">\n' +
+        '                                    <option {{ high }}>High</option>\n' +
+        '                                    <option {{ medium }}>Medium</option>\n' +
+        '                                    <option {{ low }}>Low</option>\n' +
+        '                                </select>\n' +
+        '                            </div>\n' +
+        '                        </div>\n' +
+        '                        <div class="col-md-2 col-sm-6">\n' +
+        '                            <div class="form-group">\n' +
+        '                                <label class="col-form-label">Status</label>\n' +
+
+            {% set open = "" %}{% set closed = "" %}
+            {% if ticketInfo.status == 0 %}
+                {% set open = "selected" %}
+            {% else %}
+                {% set closed = "selected" %}
+            {% endif %}
+
+        '                                <select id="status{{ id }}" class="form-control">\n' +
+        '                                    <option {{ open }}>Open</option>\n' +
+        '                                    <option {{ closed }}>Closed</option>\n' +
+        '                                </select>\n' +
+        '                            </div>\n' +
+        '                        </div>\n' +
+        '                    </div>\n' +
+        '                    <div class="form-row">\n' +
+        '                        <div class="col-md-4">\n' +
+        '                            <div class="form-group">\n' +
+        '                                <label class="col-form-label">Assigned To</label>\n' +
+        '                                <select id="operator{{ id }}" class="form-control">\n' +
+        {% for relatedOperator in relatedOperators %}
+
+        {% if ticketInfo.problemtype_id == relatedOperator.problemtype_id %}
+
+            {% if ticketInfo.operator_id == relatedOperator.operator_id %}
+                {% set currentOp = "selected" %}
+            {% else %}
+                {% set currentOp = "" %}
+            {% endif %}
+
+        '                                   <option id="{{ id }}operator{{ relatedOperator.operator_id }}" {{ currentOp }}>#{{ relatedOperator.operator_id }} - {{ relatedOperator.first_name }}</option>\n' +
+
+        {% endif %}
+
+        {% endfor %}
+        '                                </select>\n' +
+        '                            </div>\n' +
+        '                        </div>\n' +
+        '                        <div class="col-md-8"> <!-- This will be some sort of tree thing -->\n' +
+        '                            <div class="form-group">\n' +
+        '                                <label class="col-form-label">Problem Type</label>\n' +
+        '                                <select id="type{{ id }}" class="form-control" onchange="loadOperators({{ id }})">\n' +
+
+        {% for problemType in problemTypes %}
+
+            {% if ticketInfo.problemtype_id == problemType.problemtype_id %}
+                {% set currentType = "selected" %}
+            {% else %}
+                {% set currentType = "" %}
+            {% endif %}
+
+        '                                    <option id="{{ id }}type{{ problemType.problemtype_id }}" {{ currentType }}>{{ problemType.type }}</option>\n' +
+
+        {% endfor %}
+        '                                </select>\n' +
+        '                            </div>\n' +
+        '                        </div>\n' +
+        '                    </div>\n' +
+        '                    <hr />\n' +
+        '                    <div class="row">\n' +
+        '                        <table class="table">\n' +
+        '                            <thead>\n' +
+        '                            <tr>\n' +
+        '                                <th width="20%">Type</th>\n' +
+        '                                <th width="40%">Name</th>\n' +
+        '                                <th width="40%">Serial/License Key</th>\n' +
+        '                                <th width="40em"></th>\n' +
+        '                            </tr>\n' +
+        '                            </thead>\n' +
+        '                            <tbody id="hwsw-list">\n' +
+
+        {% for ticketHardware in ticketHardware %}
+
+        '                            <tr id="{{ id }}hardware{{ ticketHardware.hardwareitem_id }}">\n' +
+        '                                <td>{{ ticketHardware.type }}</td>\n' +
+        '                                <td>{{ ticketHardware.make }} - {{ ticketHardware.model }}</td>\n' +
+        '                                <td>{{ ticketHardware.serial_no }}</td>\n' +
+        '                                <td><a href="#" onclick="this.parentNode.parentNode.remove();probHardDel({{ id }}, {{ ticketHardware.hardwareitem_id }});"><i class="fa fa-times ml-1"></i></a></td>\n' +
+        '                            </tr>\n' +
+
+        {% endfor %}
+
+        {% for ticketSoftware in ticketSoftware %}
+
+        '                            <tr id="{{ id }}software{{ ticketSoftware.softwareitem_id }}">\n' +
+        '                                <td>Software</td>\n' +
+        '                                <td>{{ ticketSoftware.name }}</td>\n' +
+        '                                <td>{{ ticketSoftware.license_key }}</td>\n' +
+        '                                <td><a href="#" onclick="this.parentNode.parentNode.remove();probSoftDel({{ id }}, {{ ticketSoftware.softwareitem_id }});"><i class="fa fa-times ml-1"></i></a></td>\n' +
+        '                            </tr>\n' +
+
+        {% endfor %}
+        '                            </tbody>\n' +
+        '                        </table>\n' +
+        '                    </div>\n' +
+        '                </div>\n' +
+        '                <div class="modal-footer">\n' +
+        '                    <button type="button" class="btn btn-primary" data-dismiss="modal" onclick="updateTicket({{ id }});">Save changes</button>\n' +
+        '                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>\n' +
+        '                </div>\n' +
+        '            </div>\n' +
+        '        </div>\n' +
+        '    </div>\n' +
+        '    <div class="modal" id="modal-note{{ id }}" >\n' +
+        '        <div class="modal-dialog modal-lg">\n' +
+        '            <div class="modal-content">\n' +
+        '                <div class="modal-header">\n' +
+        '                    <h5 class="modal-title">Ticket {{ id }} - Add Note</h5>\n' +
+        '                    <button type="button" class="close" data-dismiss="modal" >&times;</button>\n' +
+        '                </div>\n' +
+        '                <div class="modal-body">\n' +
+        '                    <textarea id="message{{ id }}" class="form-control" rows="10"></textarea>\n' +
+        '                </div>\n' +
+        '                <div class="modal-footer">\n' +
+        '                    <button type="button" class="btn btn-primary" data-dismiss="modal" onclick="addNote({{ id }})">Save changes</button>\n' +
+        '                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>\n' +
+        '                </div>\n' +
+        '            </div>\n' +
+        '        </div>\n' +
+        '    </div>\n' +
+        '<div id="addWare-modal{{ id }}"></div>'
+    );
+        {% endfor %}
+</script>

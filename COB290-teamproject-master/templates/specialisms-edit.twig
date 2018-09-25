@@ -1,0 +1,81 @@
+{# Author: Harry Collins #}
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                   <div>
+                    {{ specialist.first_name }} {{ specialist.last_name }}
+                   </div>
+                   <div>
+                       &nbsp;
+                   </div>
+                </h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <table class="table">
+                    <thead>
+                    <tr>
+                        <th style="width: 90%;">Current Specialisms</th> <!--modal title-->
+                        <th></th>
+                    </tr>
+                    </thead>
+                    <tbody id="currentSpecialismsTable">
+                    {% for specialism in specialist.specialisms|split(',') %} <!--loop through sql returned specialisms for specialist
+                                                                              return row for each specialism -->
+                        <tr>
+                            <td>{{ specialism }}</td>
+                            <td></td>
+                        </tr>
+                    {% endfor %}
+                    </tr>
+                    </tbody>
+                </table>
+
+                <table class="table">
+                    <thead>
+                    <tr>
+                        <th style="width: 90%;">Add Specialisms</th> <!--display rows of remaining specialisms -->
+                        <th></th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr>
+                        {% for availableSpec in specialismsAvailable  %} <!--loop through remaining specialisms not assigned to specialist
+                                                                         return row for each specialism -->
+                            <tr>
+                                <td>{{ availableSpec.type }}</td>
+                                <td><a href="#" onClick="addSpecialism({{ id }}, {{ availableSpec.problemtype_id }}, '{{ availableSpec.type }}', $(this))"><i class="fa fa-plus"></i></a></td> <!--button to add specialism to database and list-->
+                            </tr>
+                        {% endfor %}
+                    </tr>
+                    </tbody>
+                </table>
+
+            </div>
+            <div class="modal-footer">
+
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+
+
+
+    <script>
+
+       function addSpecialism(operatorId, specialismId, addedSpec, $this){ //function to add Specialism to database
+            $.post("/specialists/"+operatorId+"/addSpecialism", {problemtype_id:specialismId}, //adds specialism to database
+            function(){
+                $("#currentSpecialismsTable").append("<tr><td>"+addedSpec+"</td></tr>"); //live update modal -- add new spec to current spec list
+                $this.parent().parent().remove(); //live update modal -- delete added spec from remaining specs
+                $("#specialist-"+operatorId+"-badges").append(" "+'<span class="badge badge-secondary">'+addedSpec+'</span>') //live update main Specialists list for specialisms
+
+
+            })
+                }
+
+
+    </script>

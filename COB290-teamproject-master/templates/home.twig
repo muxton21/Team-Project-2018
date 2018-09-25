@@ -1,0 +1,137 @@
+{# Author: Joe Penny & Matthew Gabriel #}
+{% extends "template.twig" %}
+{% set active_page = "home" %}
+{% block title %}Home{% endblock %}
+{% block css %}
+    <style>
+        .table > tbody > tr {
+            cursor: pointer;
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+    <div class="row">
+        <div class="col-sm-12 col-md-6 col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h3>Open Tickets <a href="/record-call" class="btn btn-outline-primary pull-right">Record Call</a></h3>
+                </div>
+
+                <table id="currentCallsTable" class="table table-hover">
+                    <thead>
+                    <tr>
+                        <th style="cursor:pointer;" onClick="sortTable(0, 'currentCalls', 'int');" width="80em">ID <i class="fa fa-fw fa-sort float-right"></i></th>
+                        <th style="cursor:pointer;" onClick="sortTable(1, 'currentCalls', 'int');" width="100em">Age <i class="fa fa-fw fa-sort float-right"></i></th>
+                        <th style="cursor:pointer;" onClick="sortTable(2, 'currentCalls', 'int');" width="100em">Priority <i class="fa fa-fw fa-sort float-right"></i></th>
+                        <th>Subject</th>
+                        <th width="40em"></th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% for ticket in tickets %}
+                        {% set difference = date(ticket.received).diff(date('now')) %}
+                        {% if difference.d < 1 %}
+                            {% if difference.h <1 %}
+                                {% set age = "Just now" %}
+                            {% else %}
+                                {% set age = difference.h ~ "h ago" %}
+                            {% endif %}
+                        {% else %}
+                            {% set age = difference.days ~ "d ago" %}
+                        {% endif %}
+
+                        {% if ticket.priority == 1 %}
+                            {% set priority = "Low" %}
+                            {% set pcolor = "#7ab3ff" %}
+                        {% elseif ticket.priority == 2 %}
+                            {% set priority = "Medium" %}
+                            {% set pcolor = "orange" %}
+                        {% else %}
+                            {% set priority = "High" %}
+                            {% set pcolor = "red" %}
+                        {% endif %}
+
+                        {% set expandId = "ticket" ~ ticket.problem_id %}
+                        <tr onclick="window.location.href = '/tickets?id={{ ticket.problem_id }}';" id="Row-{{ ticket.problem_id }}" class="ticket-item" data-parent="#tickets-body">
+                            <td data-value="{{ ticket.problem_id }}">#{{ ticket.problem_id }}</td>
+                            <td data-value={{ difference.h + difference.d*24 }}>{{ age }}</td>
+                            <td data-value="{{ 2 - ticket.priority }}" style="color: {{ pcolor }}">{{ priority }}</td>
+                            <td style="text-overflow: ellipsis;">{{ ticket.subject }}</td>
+                            <td><i class="fa fa-caret-square-o-down ticket-item-expand"></i></td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="col-sm-12 col-md-6 col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h4>Specialist Availability</h4>
+                </div>
+                <table id="specialistsTable" class="table table-hover">
+                    <thead>
+                    <tr>
+                        <th style="cursor:pointer;" onClick="sortTable(0, 'specialists', 'str');">First Name<i class="fa fa-fw fa-sort float-right"></i></th>
+                        <th style="cursor:pointer;" onClick="sortTable(1, 'specialists', 'str');">Last Name<i class="fa fa-fw fa-sort float-right"></i></th>
+                        <th style="cursor:pointer;" onClick="sortTable(2, 'specialists', 'int');">No. Open Tickets<i class="fa fa-fw fa-sort float-right"></i></th>
+                        <th></th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% for specialist in specialists %}
+                        {% if specialist.open_tickets == 0 %}
+                            {% set scolor = "#7ab3ff" %}
+                        {% elseif specialist.open_tickets == 1 or specialist.open_tickets == 2  %}
+                            {% set scolor = "orange" %}
+                        {% else %}
+                            {% set scolor = "red" %}
+                        {% endif %}
+
+                        <tr onclick="window.location.href = '/specialists?id={{ specialist.operator_id }}';">
+                            <td data-value="{{ specialist.first_name }}">{{ specialist.first_name }}</td>
+                            <td data-value="{{ specialist.last_name }}">{{ specialist.last_name }}</td>
+                            <td style="color: {{ scolor  }};" data-value="{{ specialist.open_tickets }}">{{ specialist.open_tickets }}</td>
+                            <td><i class="fa fa-caret-square-o-down float-right"></i></td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block js %}
+    <script>
+        function sortTable(n, table, type)
+        {
+            var rows = document.getElementById(table + "Table").getElementsByTagName('tbody')[0]; //Get the set of rows
+            var switching = true;//Start switching to true to start the sort
+            while(switching)
+            {
+                switching = false;
+                for (var i = 0; i < rows.children.length - 1; i++)
+                {
+                    if(type == 'int')
+                    {
+                        var row = parseInt(rows.children[i].children[n].getAttribute('data-value')); //Get the data for a give row
+                        var nextRow = parseInt(rows.children[i + 1].children[n].getAttribute('data-value')); //Get the data for the next row
+                    }
+                    else
+                    {
+                        var row = rows.children[i].children[n].getAttribute('data-value'); //Get the data for a give row
+                        var nextRow = rows.children[i + 1].children[n].getAttribute('data-value'); //Get the data for the next row
+                    }
+                    var shouldSwitch = row > nextRow; // Should the code switch the rows?
+                    if(shouldSwitch)
+                    {
+                        rows.insertBefore(rows.children[i + 1], rows.children[i]); //Perform the switch
+                        switching = true; //The function has switched in this cycle
+                    }
+                }
+            }
+        }
+    </script>
+{% endblock %}

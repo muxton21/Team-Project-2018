@@ -1,0 +1,276 @@
+{# Author: Christopher Stevens #}
+{% extends "call/call-template.twig" %}
+{% set percentage = 15 %}
+
+{% block content %}
+    <div id="problem-problems" class="col-lg-7 col-md-9 col-sm-12 ml-auto mr-auto mt-4">
+
+        <div class="row" id="problem-addbuttons">
+            <div class="btn-group w-100">
+                <button class="btn btn-block btn-outline-primary" id="problem-new">New Problem</button>
+                <button class="btn btn-block btn-outline-primary mt-0" id="problem-existing" {% if tickets|length == 0 %}disabled{% endif %}>Existing Problem</button>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block js %}
+<script>
+    var problems, valid;
+
+    var tickets = {{ tickets|json_encode|raw }};
+    for (var i = 0; i < tickets.length; i++) {
+        if (!tickets[i].hardware) tickets[i].hardware = [];
+        if (!tickets[i].software) tickets[i].software = [];
+    }
+
+    $("#proceedBtn").prop("disabled", true);
+    $("#proceedBtn").off().on("click", function() {
+        problems = [];
+        valid = true;
+
+        $("form.problem").each(function() { // For each form (problem)...
+            $(this).find("input[type='submit']").click();
+        });
+
+        if (valid) {
+            $("#v-pills-specialist").load("/record-call/2", {problems: problems}); // Submit the data
+            $("#v-pills-problem-tab").removeClass("active text-light").addClass("text-dark"); // Change the current tab
+            $("#v-pills-specialist-tab").removeClass("text-dark").addClass("active text-light");
+            $("#v-pills-problem").removeClass("active show");
+            $("#v-pills-specialist").addClass("active show");
+        }
+    });
+
+    //
+    // Typeahead.js setup for the Hardware/Software inputs.
+    //
+
+    function typeaheadInit() {
+        var hardware = new Bloodhound({
+            datumTokenizer: Bloodhound.tokenizers.obj.whitespace("type", "make", "model"),
+            queryTokenizer: Bloodhound.tokenizers.whitespace,
+            identify: function(obj) { return obj.hardware_id },
+            local: {{ hardware|json_encode|raw }}
+        });
+
+        var software = new Bloodhound({
+            datumTokenizer: Bloodhound.tokenizers.obj.whitespace("name"),
+            queryTokenizer: Bloodhound.tokenizers.whitespace,
+            identify: function(obj) { return obj.software_id },
+            local: {{ software|json_encode|raw }}
+        });
+
+        $(".hwsw-list > tr").each(function() { // For each row in the hardware/software lists
+            var $this = $(this);
+            var $makemodel = $this.find("input[data-name='makemodel']");
+            var $licenseserial = $this.find("input[data-name='licenseserial']");
+            $makemodel.typeahead("destroy"); // Reset typeahead
+            $licenseserial.typeahead("destroy"); // Reset typeahead
+
+            if ($this.find("select[data-name='hardsoftware']").val() === "Hardware") { // If it's a hardware row
+                $makemodel.typeahead(null, { // Init the hardware typeahead
+                    name: "hardware",
+                    source: hardware,
+                    display: "Make & Model",
+                    templates: {
+                        suggestion: function(obj) {return "<div><strong>" + obj.make + " " + obj.model + "</strong> (" + obj.type + ")</div>"; }
+                    }
+                });
+            } else { // Otherwise it's software so
+                $makemodel.typeahead(null, { // init the software typeahead
+                    name: "software",
+                    source: software,
+                    display: "Name"
+                });
+            }
+        });
+    }
+
+    $("#problem-new").click(function() { // If the user creates a new problem...
+        $("#proceedBtn").prop("disabled", false);
+        var $problemWrap = $("{% filter escape("js") %}{{ include("call/problem-template.twig", {new: true}) }}{% endfilter %}"); // Get the problem template
+        var $problem = $problemWrap.find("form");
+        $("#problem-addbuttons").before($problemWrap);
+        $problemWrap.find("input[type='submit']").click(function(e) {
+            if ($problem[0].reportValidity) $problem[0].reportValidity(); // Not supported in IE - makes pretty browser-based validation messages appear.
+
+            if ($problem[0].checkValidity() && $problemWrap.find(".tree").treeview("getSelected").length === 1) { // If the form is valid...
+                if ($problem.hasClass("new")) { // If it's a new problem...
+                    var hardware = [];
+                    var software = [];
+                    $(".hwsw-list > tr").each(function() { // For each row in the table of HW/SW add the hw/sw to the relevant list.
+                        var $this = $(this);
+                        var makemodel = $this.find("input[data-name='makemodel']").val();
+                        var licenseserial = $this.find("input[data-name='licenseserial']").val();
+                        if (makemodel === "" || licenseserial === "") return;
+
+                        if ($this.find("select[data-name='hardsoftware']").val() === "Hardware") {
+                            hardware.push([makemodel, licenseserial]);
+                        } else {
+                            software.push([makemodel, licenseserial]);
+                        }
+                    });
+
+                    problems.push({ // Add the new problem to the list of problems.
+                        type: "new",
+                        subject: $problem.find("input[data-name='subject']").val(),
+                        priority: $problem.find("select[data-name='priority']").val(),
+                        status: 0,
+                        hardware: hardware,
+                        software: software,
+                        problemtype_id: parseInt($problemWrap.find(".tree").treeview("getSelected")[0].problemtype_id),
+                        note: $problem.find("textarea[data-name='note']").val()
+                    });
+                }
+            } else { // If the form isn't valid...
+                valid = false; // Set the valid flag to false, we won't change page/submit the data.
+            }
+            e.preventDefault(); // Don't try and submit it, we'll do it ourselves:
+        });
+
+        $.getJSON("api/problemtypes", function(json) { // Get the problem type tree and render it
+            $problemWrap.find(".tree").treeview({
+                data: json,
+                collapseIcon: "fa fa-minus",
+                expandIcon: "fa fa-plus",
+                levels: 3,
+                selectedIcon: "fa fa-check"
+            });
+        });
+    });
+
+    $("#problem-existing").click(function() { // If an existing problem is chosen...
+        $("#proceedBtn").prop("disabled", false);
+        $("#problem-addbuttons").before('<div class="row">\n' + // Show the list of existing problems for that employee
+            '    <div class="col">\n' +
+            '        <table class="table mb-3">\n' +
+            '            <thead>\n' +
+            '            <tr>\n' +
+            '                <th>ID</th>\n' +
+            '                <th>Age</th>\n' +
+            '                <th>Priority</th>\n' +
+            '                <th>Subject</th>\n' +
+            '                <th></th>\n' +
+            '            </tr>\n' +
+            '            </thead>\n' +
+            '            <tbody>\n' +
+            {% for ticket in tickets %}
+            '            <tr class="existing-item" onclick="replaceTable($(this), {{ ticket.problem_id }});">\n' +
+            '                <td>#{{ ticket.problem_id }}</td>\n' +
+            '                <td>{{ ticket.age }} days</td>\n' +
+            '                <td>{{ ticket.priority }}</td>\n' +
+            '                <td style="text-overflow: ellipsis;">{{ ticket.subject }}</td>\n' +
+            '                <td><i class="fa fa-caret-square-o-right"></i></td>\n' +
+            '            </tr>\n' +
+            {% endfor %}
+            '            </tbody>\n' +
+            '        </table>\n' +
+            '    </div>\n' +
+            '    <button class="btn btn-outline-danger btn-block" onclick="$(this).closest(\'.row\').remove();">Close</button>\n' +
+            '    <hr class="w-100"/>\n' +
+            '</div>');
+    });
+
+    function replaceTable($row, id) { // When an existing problem is clicked...
+        $("#proceedBtn").prop("disabled", false);
+        var $problem = $("{% filter escape("js") %}{{ include("call/problem-template.twig", {new: false}) }}{% endfilter %}");
+        $row.closest(".row").html($problem); // Replace the table of existing problems with the selected problem.
+
+        var ticket = tickets.find(function(obj) { return obj.problem_id == id}); // Find the ticket in the list of tickets
+
+        // Update all the fields in the problem with the relevant info and disable them.
+        $problem.find("input[data-name='subject']").val(ticket.subject).prop("disabled", true);
+        $problem.find("select[data-name='priority']").val(ticket.priority).prop("disabled", true);
+        $problem.find("input[data-name='problemtype']").val(ticket.type).prop("disabled", true);
+
+        for (var i = 0; i < ticket.hardware.length; i++) {
+            var hardware = ticket.hardware[i];
+            $problem.find(".hwsw-list").append("<tr>\n" +
+                "    <td>\n" +
+                "        <select class=\"form-control\" data-name=\"hardsoftware\" disabled>\n" +
+                "            <option>Hardware</option>\n" +
+                "        </select>\n" +
+                "    </td>\n" +
+                "    <td><input type=\"text\" class=\"form-control\" data-name=\"makemodel\" value=\"" + hardware.make + " " + hardware.model + "\" disabled></td>\n" +
+                "    <td><input type=\"text\" class=\"form-control\" data-name=\"licenseserial\" value=\"" + hardware.serial_no + "\" disabled></td>\n" +
+                "</tr>"
+            );
+        }
+        for (i = 0; i < ticket.software.length; i++) {
+            var software = ticket.software[i];
+            $problem.find(".hwsw-list").append("<tr>\n" +
+                "    <td>\n" +
+                "        <select class=\"form-control\" data-name=\"hardsoftware\" disabled>\n" +
+                "            <option>Software</option>\n" +
+                "        </select>\n" +
+                "    </td>\n" +
+                "    <td><input type=\"text\" class=\"form-control\" data-name=\"makemodel\" value=\"" + software.name + "\" disabled></td>\n" +
+                "    <td><input type=\"text\" class=\"form-control\" data-name=\"licenseserial\" value=\"" + software.license_key + "\" disabled></td>\n" +
+                "</tr>"
+            );
+        }
+        var notesAndCalls = ticket.calls.concat(ticket.notes);
+        notesAndCalls.sort(function(a, b) { return b.age - a.age });
+
+        for (i = 0; i < notesAndCalls.length; i++) {
+            var note = notesAndCalls[i];
+            $problem.find(".notes").append(
+                '<div class="list-group-item flex-column align-items-start pt-0">\n' +
+                '    <div class="d-flex w-100 justify-content-between">\n' +
+                '        <div class="d-flex">\n' +
+                '            <h5 class="mb-1"><i class="fa fa-' + (note.type === "note" ? "sticky-note" : "phone") + ' mr-1"></i> ' + note.first_name + ' ' + note.last_name + ' </h5>\n' +
+                '        </div>\n' +
+                '        <small>' + note.age + 'd ago</small>\n' +
+                '    </div>\n' +
+                '    <p>' + note.message + '</p>\n' +
+                '</div>\n'
+            );
+        }
+
+        $problem.find("input[type='submit']").click(function(e) { // If submitting...
+            if ($problem[0].reportValidity) $problem[0].reportValidity(); // Not supported in IE - makes pretty browser-based validation messages appear.
+
+            if ($problem[0].checkValidity()) { // If the form is valid...
+
+                problems.push({
+                    type: "existing",
+                    problem_id: ticket.problem_id,
+                    problemtype_id: ticket.problemtype_id,
+                    note: $problem.find("textarea[data-name='note']").val()
+                });
+            } else { // If the form isn't valid...
+                valid = false; // Set the valid flag to false, we won't change page/submit the data.
+            }
+            e.preventDefault(); // Don't try and submit it, we'll do it ourselves:
+        });
+    }
+
+
+    $(document)
+        .on("change", "select[data-name='hardsoftware']", function(e) {
+        if ($(e.target).val() === "Hardware") {
+            $(e.target).parent().next().find("input[data-name='makemodel']").attr("placeholder", "Make & Model");
+            $(e.target).parent().next().next().find("input[data-name='licenseserial']").attr("placeholder", "Serial Number");
+        } else {
+            $(e.target).parent().next().find("input[data-name='makemodel']").attr("placeholder", "Name");
+            $(e.target).parent().next().next().find("input[data-name='licenseserial']").attr("placeholder", "License Key");
+        }
+    }).on("click", "a[data-name='add-hardsoftware']", function(e) {
+        $(e.target).parents().eq(3).append(
+            "<tr>\n" +
+            "    <td>\n" +
+            "        <select class=\"form-control\" data-name=\"hardsoftware\">\n" +
+            "            <option>Hardware</option>\n" +
+            "            <option>Software</option>\n" +
+            "        </select>\n" +
+            "    </td>\n" +
+            "    <td><input type=\"text\" class=\"form-control\" placeholder=\"Make &amp; Model\" data-name=\"makemodel\"></td>\n" +
+            "    <td><input type=\"text\" class=\"form-control\" placeholder=\"Serial Number\" data-name=\"licenseserial\"></td>\n" +
+            "</tr>"
+        );
+    });
+
+    //# sourceURL=2-problem.js
+</script>
+{% endblock %}
